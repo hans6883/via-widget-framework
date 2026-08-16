@@ -9,28 +9,115 @@ widget — not an exhaustive reference (no official documentation survives).
 Widgets are built on the framework the engine ships (commonly namespaced
 `KONtx`). The pieces you actually use:
 
-- **Views / controllers** — objects that describe on-screen elements (text,
-  images, lists) and respond to focus and remote-control key events.
-- **Message bus** — a publish/subscribe mechanism the framework uses to route
-  lifecycle and input events between components.
-- **Timers** — scheduled callbacks (the platform relies on native function
-  timers; animation and polling are driven this way).
-- **Storage** — key/value persistence for widget state under the engine's
-  writable `data/` tree.
+### Views / controllers
+
+Objects that describe on-screen elements (text, images, lists) and respond to
+focus and remote-control key events. The screen resolution for widgets is
+960×540.
+
+```js
+var view = new KONtx.controller.View({
+  x: 0, y: 0, width: 960, height: 540
+});
+
+var label = new KONtx.element.Text({
+  x: 20, y: 100, width: 920, height: 40,
+  halign: "center", size: 28, color: "#FFFFFF",
+  text: "Hello from a custom widget"
+});
+
+view.appendChild(label);
+```
+
+### Message bus
+
+A publish/subscribe mechanism the framework uses to route lifecycle and input
+events between components.
+
+```js
+KONtx.messenger.subscribe("keydown", function (event) {
+  if (event.key === "enter") { /* OK button pressed */ }
+});
+```
+
+### Timers
+
+Scheduled callbacks for animation and polling. The engine uses native function
+timers:
+
+```js
+var interval = setInterval(function () {
+  // poll for updated data, refresh UI
+}, 30000);
+```
+
+### Storage
+
+Key/value persistence for widget state, stored under the engine's writable
+`data/` tree:
+
+```js
+KONtx.storage.set("lastChannel", channelId);
+var saved = KONtx.storage.get("lastChannel");
+```
 
 ## Platform / system objects
 
 Beyond drawing, the engine exposes host capabilities. The ones most relevant to
 any non-trivial widget:
 
-- **HTTP client** — an `XMLHTTPRequest`-style object for network fetches. Use it
-  to load *your own* data; this repo supplies none.
-- **Filesystem** — read/write access to files (open, read, write, copy, move,
-  remove, directory listing, zip/unzip, md5).
-- **Native command bridge** — the engine can execute host shell commands from
-  JavaScript. On this platform that runs with full privilege and no sandbox;
-  treat it as powerful and dangerous, and see `vizio-re` for the security
-  analysis. A well-behaved widget does not need it.
+### HTTP client
+
+An `XMLHTTPRequest`-style object for network fetches. Use it to load *your own*
+data; this repo supplies none.
+
+```js
+var req = new XMLHttpRequest();
+req.open("GET", "http://example.com/data.json", true);
+req.onreadystatechange = function () {
+  if (req.readyState === 4 && req.status === 200) {
+    var data = JSON.parse(req.responseText);
+    // update views with data
+  }
+};
+req.send();
+```
+
+Note: the platform only supports TLS 1.0 with an outdated CA bundle, so HTTPS
+to modern endpoints will fail. See `vizio-re` docs/02 for the full TLS profile.
+
+### Filesystem
+
+Read/write access to files on the device. The API surface includes open, read,
+write, copy, move, remove, directory listing, zip/unzip, and md5:
+
+```js
+var fs = KONtx.system.FileSystem;
+
+// Read a file
+var content = fs.readFile("/3rd_rw/some_config.txt");
+
+// Write a file
+fs.writeFile("/3rd_rw/widget_data/state.json", JSON.stringify(state));
+
+// List a directory
+var entries = fs.listDirectory("/3rd_rw/yahoo_widget/TV/Widgets/Installed/");
+```
+
+Writable paths are on `/3rd_rw`; the root filesystem is dm-verity protected
+and read-only. Files written to `/3rd_rw` survive factory reset.
+
+### Native command bridge
+
+The engine can execute host shell commands from JavaScript via `RunCommand`.
+On this platform that runs with full privilege (root) and no sandbox; treat it
+as powerful and dangerous, and see `vizio-re` for the security analysis. A
+well-behaved widget does not need it.
+
+```js
+// NOT recommended for production widgets — shown for completeness
+var result = KONtx.system.RunCommand("uname -a");
+```
 
 ## Remote-control input
 
