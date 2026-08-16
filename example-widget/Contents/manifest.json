@@ -1,0 +1,8 @@
+{
+  "id": "com.example.hello",
+  "name": "Hello VIA",
+  "version": "1.0.0",
+  "description": "Minimal hello-world widget for the Yahoo Konfabulator engine on Vizio VIA TVs. Draws text and responds to a remote key. No network, no content sources.",
+  "entry": "Main.js",
+  "resolution": "960x540"
+}

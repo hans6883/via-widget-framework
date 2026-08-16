@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.widget
+*.js.1.o
+*.js.o
+# never ship service-specific data or stream sources
+*.m3u
+*.m3u8
+catalog/
+streams/
